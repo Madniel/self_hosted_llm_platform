@@ -1,0 +1,32 @@
+# GPU image: the real thing. vLLM ships its own pinned torch/CUDA wheels, so the
+# base only needs a CUDA runtime and Python.
+FROM nvidia/cuda:12.4.1-runtime-ubuntu22.04
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    DEBIAN_FRONTEND=noninteractive \
+    LLMSERVE_BACKEND=vllm \
+    HF_HOME=/models
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends python3.10 python3-pip \
+ && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY requirements.txt requirements-gpu.txt ./
+RUN pip3 install --no-cache-dir -r requirements.txt -r requirements-gpu.txt
+
+COPY llmserve ./llmserve
+COPY loadtest ./loadtest
+COPY pyproject.toml ./
+
+# Weights live on a mounted volume, not in the image.
+VOLUME ["/models"]
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=300s --retries=3 \
+  CMD python3 -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/readyz', timeout=3).status==200 else 1)"
+
+CMD ["python3", "-m", "llmserve"]

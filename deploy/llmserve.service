@@ -1,0 +1,70 @@
+# Self-hosted LLM serving platform -- systemd unit.
+#
+#   sudo cp deploy/llmserve.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now llmserve
+#
+# Assumes the layout from the README's Ubuntu section:
+#   /opt/llmserve            checkout, owned by the llmserve user
+#   /opt/llmserve/.venv      virtualenv
+#   /etc/llmserve/llmserve.env   configuration (see llmserve.env.example)
+
+[Unit]
+Description=Self-hosted LLM serving platform (FastAPI + vLLM)
+Documentation=file:/opt/llmserve/README.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=llmserve
+Group=llmserve
+WorkingDirectory=/opt/llmserve
+EnvironmentFile=/etc/llmserve/llmserve.env
+ExecStart=/opt/llmserve/.venv/bin/python -m llmserve
+
+# Graceful drain. SIGTERM makes the app stop admitting, reject anything queued with
+# 503, and wait for in-flight generations to finish streaming. TimeoutStopSec must
+# exceed LLMSERVE_DRAIN_TIMEOUT_S, which in turn must exceed the longest generation.
+KillSignal=SIGTERM
+KillMode=mixed
+TimeoutStopSec=180
+
+# Loading a large model takes minutes; do not let systemd give up mid-load.
+TimeoutStartSec=900
+
+Restart=on-failure
+RestartSec=5s
+
+# Model weights and the HF cache live under /var/lib/llmserve (StateDirectory
+# creates and chowns it). Keep this off the root filesystem for large models.
+StateDirectory=llmserve
+Environment=HF_HOME=/var/lib/llmserve/hf
+Environment=PYTHONUNBUFFERED=1
+# ProtectSystem=strict makes /opt/llmserve read-only, so bytecode caching would
+# fail silently on every import. Skip it instead.
+Environment=PYTHONDONTWRITEBYTECODE=1
+
+# Logs go to the journal:  journalctl -u llmserve -f
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=llmserve
+
+# --- hardening -------------------------------------------------------------
+# Note for GPU deployments: do NOT add PrivateDevices=true -- it hides /dev/nvidia*
+# from the service and vLLM will fail to find the GPU.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+LockPersonality=true
+# torch/vLLM JIT-compile kernels at runtime, so W^X cannot be enforced.
+MemoryDenyWriteExecute=false
+
+[Install]
+WantedBy=multi-user.target

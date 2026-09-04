@@ -1,0 +1,41 @@
+services:
+  # Default: no GPU needed. `docker compose up server`
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      LLMSERVE_BACKEND: mock
+      LLMSERVE_MODEL: mock-llm
+      LLMSERVE_MAX_CONCURRENT_REQUESTS: "8"
+      LLMSERVE_MAX_QUEUE_SIZE: "32"
+      LLMSERVE_QUEUE_TIMEOUT_S: "10"
+      LLMSERVE_LOG_JSON: "true"
+
+  # Real serving: `docker compose --profile gpu up server-gpu`
+  server-gpu:
+    profiles: ["gpu"]
+    build:
+      context: .
+      dockerfile: Dockerfile.gpu
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./models:/models
+    environment:
+      LLMSERVE_BACKEND: vllm
+      LLMSERVE_MODEL: ${MODEL:-meta-llama/Llama-3.1-8B-Instruct}
+      LLMSERVE_MAX_CONCURRENT_REQUESTS: "32"
+      LLMSERVE_MAX_QUEUE_SIZE: "128"
+      LLMSERVE_QUEUE_TIMEOUT_S: "20"
+      LLMSERVE_VLLM_GPU_MEMORY_UTILIZATION: "0.90"
+      HUGGING_FACE_HUB_TOKEN: ${HUGGING_FACE_HUB_TOKEN:-}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

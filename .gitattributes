@@ -1,0 +1,10 @@
+# Normalise line endings so the repo stays LF regardless of who clones it.
+* text=auto eol=lf
+
+# PowerShell is happiest with CRLF on disk.
+*.ps1 text eol=crlf
+
+# Never touch these.
+*.png binary
+*.jpg binary
+*.pdf binary
