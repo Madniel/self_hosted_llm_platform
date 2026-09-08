@@ -9,8 +9,8 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
+from collections.abc import AsyncIterator, Callable, Iterable
 from dataclasses import dataclass
-from typing import AsyncIterator, Callable, Iterable, List, Optional
 
 from . import metrics
 from .admission import AdmissionController, Lease
@@ -18,6 +18,7 @@ from .config import Settings
 from .engine.base import GenerationRequest, InferenceEngine, TokenChunk
 from .errors import AdmissionError, EngineError, RequestTimeoutError
 from .streaming import LatencyRecorder
+
 
 logger = logging.getLogger(__name__)
 
@@ -98,7 +99,7 @@ async def generate_blocking(
 ) -> GenerationResult:
     """Run a generation to completion and return the whole thing."""
     _observe_start(route, rec)
-    parts: List[str] = []
+    parts: list[str] = []
     finish_reason = "stop"
     prompt_tokens = completion_tokens = 0
     agen = ctx.engine.generate(request)
@@ -215,14 +216,14 @@ async def generate_stream(
         _observe_end(route, rec)
 
 
-def build_prompt(messages: Iterable[dict], *, template: Optional[str] = None) -> str:
+def build_prompt(messages: Iterable[dict], *, template: str | None = None) -> str:
     """Render chat messages into a single prompt.
 
     Deliberately minimal and model-agnostic: a production deployment should swap this
     for the tokenizer's own chat template (``tokenizer.apply_chat_template``) so the
     special tokens match what the model was trained on.
     """
-    lines: List[str] = []
+    lines: list[str] = []
     for message in messages:
         role = message.get("role", "user")
         content = (message.get("content") or "").strip()

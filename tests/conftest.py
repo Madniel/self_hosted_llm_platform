@@ -1,16 +1,16 @@
 from __future__ import annotations
 
 import asyncio
+import pytest_asyncio
+from asgi_lifespan import LifespanManager
+from collections.abc import AsyncIterator
 from dataclasses import replace
-from typing import AsyncIterator
+from llmserve.app import create_app
+from llmserve.config import Settings
 
 import httpx
 import pytest
-import pytest_asyncio
-from asgi_lifespan import LifespanManager
 
-from llmserve.app import create_app
-from llmserve.config import Settings
 
 FAST = Settings(
     backend="mock",

@@ -5,8 +5,10 @@ from __future__ import annotations
 import asyncio
 import json
 import time
+from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
-from typing import Any, AsyncIterator, List, Optional
+from typing import Any
+
 
 SSE_DONE = b"data: [DONE]\n\n"
 SSE_KEEPALIVE = b": keep-alive\n\n"
@@ -38,7 +40,7 @@ def sse_error(message: str, code: str, error_type: str = "server_error") -> byte
 
 
 async def with_keepalive(
-    source: AsyncIterator[bytes], interval: Optional[float]
+    source: AsyncIterator[bytes], interval: float | None
 ) -> AsyncIterator[bytes]:
     """Emit an SSE comment whenever ``source`` is quiet for ``interval`` seconds.
 
@@ -52,7 +54,7 @@ async def with_keepalive(
         return
 
     iterator = source.__aiter__()
-    pending: Optional[asyncio.Future] = None
+    pending: asyncio.Future | None = None
     try:
         while True:
             if pending is None:
@@ -89,18 +91,18 @@ class LatencyRecorder:
 
     arrived_at: float = field(default_factory=time.perf_counter)
     queue_wait_s: float = 0.0
-    first_token_at: Optional[float] = None
-    last_token_at: Optional[float] = None
-    finished_at: Optional[float] = None
-    inter_token_gaps: List[float] = field(default_factory=list)
+    first_token_at: float | None = None
+    last_token_at: float | None = None
+    finished_at: float | None = None
+    inter_token_gaps: list[float] = field(default_factory=list)
     tokens: int = 0
     prompt_tokens: int = 0
     outcome: str = "pending"
 
-    def on_token(self, count: int = 1) -> Optional[float]:
+    def on_token(self, count: int = 1) -> float | None:
         """Record a delivered delta; returns the inter-token gap when there is one."""
         now = time.perf_counter()
-        gap: Optional[float] = None
+        gap: float | None = None
         if self.first_token_at is None:
             self.first_token_at = now
         else:
@@ -115,7 +117,7 @@ class LatencyRecorder:
         self.finished_at = time.perf_counter()
 
     @property
-    def ttft_s(self) -> Optional[float]:
+    def ttft_s(self) -> float | None:
         if self.first_token_at is None:
             return None
         return self.first_token_at - self.arrived_at

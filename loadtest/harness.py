@@ -25,10 +25,12 @@ import json
 import random
 import statistics
 import time
+from collections.abc import Sequence
 from dataclasses import asdict, dataclass, field
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any
 
 import httpx
+
 
 _WORDS = (
     "summarise the following incident report and list the mitigations that were "
@@ -42,17 +44,17 @@ _WORDS = (
 class LoadConfig:
     base_url: str = "http://127.0.0.1:8000"
     route: str = "chat"                      # "chat" | "completions"
-    model: Optional[str] = None
+    model: str | None = None
     stream: bool = True
     concurrency: int = 8
-    rps: Optional[float] = None              # set -> open loop
-    requests: Optional[int] = None
+    rps: float | None = None              # set -> open loop
+    requests: int | None = None
     duration_s: float = 20.0
     warmup_s: float = 2.0
     max_tokens: int = 64
     prompt_words: int = 60
     timeout_s: float = 120.0
-    api_key: Optional[str] = None
+    api_key: str | None = None
     seed: int = 7
 
     @property
@@ -66,12 +68,12 @@ class RequestOutcome:
     ok: bool
     status: int
     e2e_s: float
-    ttft_s: Optional[float] = None
+    ttft_s: float | None = None
     tokens: int = 0
-    itls: List[float] = field(default_factory=list)
-    error: Optional[str] = None
+    itls: list[float] = field(default_factory=list)
+    error: str | None = None
     rejected: bool = False
-    reject_reason: Optional[str] = None
+    reject_reason: str | None = None
 
 
 def percentile(values: Sequence[float], q: float) -> float:
@@ -92,7 +94,7 @@ def percentile(values: Sequence[float], q: float) -> float:
 class PhaseReport:
     label: str
     concurrency: int
-    rps_target: Optional[float]
+    rps_target: float | None
     wall_s: float
     issued: int
     succeeded: int
@@ -102,18 +104,18 @@ class PhaseReport:
     goodput_rps: float
     output_tokens: int
     output_tps: float
-    ttft: Dict[str, float]
-    itl: Dict[str, float]
-    e2e: Dict[str, float]
-    reject_reasons: Dict[str, int]
-    status_codes: Dict[str, int]
-    server_stats: Optional[Dict[str, Any]] = None
+    ttft: dict[str, float]
+    itl: dict[str, float]
+    e2e: dict[str, float]
+    reject_reasons: dict[str, int]
+    status_codes: dict[str, int]
+    server_stats: dict[str, Any] | None = None
 
-    def as_dict(self) -> Dict[str, Any]:
+    def as_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
-def _summarise(values: Sequence[float]) -> Dict[str, float]:
+def _summarise(values: Sequence[float]) -> dict[str, float]:
     if not values:
         return {"n": 0}
     return {
@@ -132,8 +134,8 @@ def _prompt(rng: random.Random, words: int) -> str:
     return " ".join(rng.choice(_WORDS) for _ in range(max(1, words)))
 
 
-def _payload(cfg: LoadConfig, prompt: str) -> Dict[str, Any]:
-    body: Dict[str, Any] = {
+def _payload(cfg: LoadConfig, prompt: str) -> dict[str, Any]:
+    body: dict[str, Any] = {
         "max_tokens": cfg.max_tokens,
         "temperature": 0.7,
         "stream": cfg.stream,
@@ -147,7 +149,7 @@ def _payload(cfg: LoadConfig, prompt: str) -> Dict[str, Any]:
     return body
 
 
-def _delta_text(obj: Dict[str, Any], route: str) -> str:
+def _delta_text(obj: dict[str, Any], route: str) -> str:
     choices = obj.get("choices") or []
     if not choices:
         return ""
@@ -162,9 +164,9 @@ async def _one_request(
 ) -> RequestOutcome:
     payload = _payload(cfg, prompt)
     started = time.perf_counter()
-    ttft: Optional[float] = None
-    last: Optional[float] = None
-    itls: List[float] = []
+    ttft: float | None = None
+    last: float | None = None
+    itls: list[float] = []
     tokens = 0
 
     try:
@@ -253,9 +255,9 @@ def _rejection(resp: httpx.Response, elapsed: float) -> RequestOutcome:
 
 # ---------------------------------------------------------------------- load models
 async def _closed_loop(
-    client: httpx.AsyncClient, cfg: LoadConfig, deadline: float, budget: Optional[int]
-) -> List[RequestOutcome]:
-    outcomes: List[RequestOutcome] = []
+    client: httpx.AsyncClient, cfg: LoadConfig, deadline: float, budget: int | None
+) -> list[RequestOutcome]:
+    outcomes: list[RequestOutcome] = []
     remaining = budget
     lock = asyncio.Lock()
 
@@ -275,12 +277,12 @@ async def _closed_loop(
 
 
 async def _open_loop(
-    client: httpx.AsyncClient, cfg: LoadConfig, deadline: float, budget: Optional[int]
-) -> List[RequestOutcome]:
+    client: httpx.AsyncClient, cfg: LoadConfig, deadline: float, budget: int | None
+) -> list[RequestOutcome]:
     """Poisson arrivals: the generator does not slow down when the server does."""
-    outcomes: List[RequestOutcome] = []
+    outcomes: list[RequestOutcome] = []
     rng = random.Random(cfg.seed)
-    tasks: List[asyncio.Task] = []
+    tasks: list[asyncio.Task] = []
     issued = 0
     assert cfg.rps and cfg.rps > 0
 
@@ -297,7 +299,7 @@ async def _open_loop(
     return outcomes
 
 
-async def _fetch_stats(client: httpx.AsyncClient) -> Optional[Dict[str, Any]]:
+async def _fetch_stats(client: httpx.AsyncClient) -> dict[str, Any] | None:
     try:
         resp = await client.get("/stats")
         if resp.status_code == 200:
@@ -308,7 +310,7 @@ async def _fetch_stats(client: httpx.AsyncClient) -> Optional[Dict[str, Any]]:
 
 
 # ------------------------------------------------------------------------- run loop
-async def run_phase(cfg: LoadConfig, label: Optional[str] = None) -> PhaseReport:
+async def run_phase(cfg: LoadConfig, label: str | None = None) -> PhaseReport:
     headers = {"Content-Type": "application/json"}
     if cfg.api_key:
         headers["Authorization"] = f"Bearer {cfg.api_key}"
@@ -345,9 +347,9 @@ def _default_label(cfg: LoadConfig) -> str:
 def _build_report(
     cfg: LoadConfig,
     label: str,
-    outcomes: List[RequestOutcome],
+    outcomes: list[RequestOutcome],
     wall: float,
-    server_stats: Optional[Dict[str, Any]],
+    server_stats: dict[str, Any] | None,
 ) -> PhaseReport:
     ok = [o for o in outcomes if o.ok]
     rejected = [o for o in outcomes if o.rejected]
@@ -358,10 +360,10 @@ def _build_report(
     itls = [gap for o in ok for gap in o.itls]
     tokens = sum(o.tokens for o in ok)
 
-    reasons: Dict[str, int] = {}
+    reasons: dict[str, int] = {}
     for o in rejected:
         reasons[o.reject_reason or "unknown"] = reasons.get(o.reject_reason or "unknown", 0) + 1
-    codes: Dict[str, int] = {}
+    codes: dict[str, int] = {}
     for o in outcomes:
         codes[str(o.status)] = codes.get(str(o.status), 0) + 1
 
@@ -387,8 +389,8 @@ def _build_report(
     )
 
 
-async def run_sweep(cfg: LoadConfig, levels: Sequence[float], open_loop: bool) -> List[PhaseReport]:
-    reports: List[PhaseReport] = []
+async def run_sweep(cfg: LoadConfig, levels: Sequence[float], open_loop: bool) -> list[PhaseReport]:
+    reports: list[PhaseReport] = []
     for level in levels:
         phase = LoadConfig(**asdict(cfg))
         if open_loop:
@@ -402,7 +404,7 @@ async def run_sweep(cfg: LoadConfig, levels: Sequence[float], open_loop: bool) -
 
 
 # -------------------------------------------------------------------------- report
-def _fmt_ms(summary: Dict[str, float], key: str) -> str:
+def _fmt_ms(summary: dict[str, float], key: str) -> str:
     value = summary.get(key)
     if value is None or summary.get("n", 0) == 0:
         return "-"
@@ -424,5 +426,8 @@ def format_table(reports: Sequence[PhaseReport]) -> str:
             f"{_fmt_ms(r.itl, 'p50'):>8} {_fmt_ms(r.e2e, 'p95'):>9}"
         )
     lines.append("")
-    lines.append("latencies in ms; gput = successful requests/s; shed = 429/503 from admission control")
+    lines.append(
+        "latencies in ms; gput = successful requests/s; "
+        "shed = 429/503 from admission control"
+    )
     return "\n".join(lines)

@@ -9,6 +9,7 @@ from ..schemas import HealthResponse, ModelCard, ModelList, StatsResponse
 from ..service import AppContext
 from .deps import get_ctx, require_api_key
 
+
 router = APIRouter(tags=["ops"])
 
 

@@ -24,11 +24,12 @@ from __future__ import annotations
 import asyncio
 import time
 from collections import deque
+from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
-from typing import AsyncIterator, Callable, Deque, Optional
 
 from .errors import AdmissionError, QueueFullError, QueueTimeoutError, ShuttingDownError
+
 
 Clock = Callable[[], float]
 
@@ -47,7 +48,7 @@ class FairSemaphore:
             raise ValueError("semaphore value must be >= 1")
         self._value = value
         self._initial = value
-        self._waiters: Deque[asyncio.Future] = deque()
+        self._waiters: deque[asyncio.Future] = deque()
 
     @property
     def value(self) -> int:
@@ -61,7 +62,13 @@ class FairSemaphore:
     def capacity(self) -> int:
         return self._initial
 
-    async def acquire(self, timeout: Optional[float] = None) -> None:
+    async def acquire(self, timeout: float | None = None) -> None:
+        """Take a permit, waiting in arrival order if none is free.
+
+        Raises :class:`asyncio.TimeoutError` if ``timeout`` elapses first. Cancellation
+        and timeout are both handled on the way out: a permit granted in the same tick
+        the waiter gave up is handed straight back rather than leaked.
+        """
         # Barge only when nobody is queued, otherwise FIFO is violated.
         if self._value > 0 and not self._waiters:
             self._value -= 1
@@ -84,6 +91,7 @@ class FairSemaphore:
             raise
 
     def release(self) -> None:
+        """Return a permit and hand it to the longest-waiting caller, if any."""
         self._value += 1
         self._wake()
 
@@ -128,6 +136,7 @@ class AdmissionStats:
         return self.rejected_queue_full + self.rejected_timeout + self.rejected_shutdown
 
     def as_dict(self) -> dict[str, float]:
+        """Flatten the counters, adding the two derived values worth reporting."""
         data = {k: v for k, v in self.__dict__.items()}
         data["rejected"] = self.rejected
         data["mean_queue_wait_s"] = (
@@ -166,7 +175,7 @@ class AdmissionController:
         queue_timeout_s: float,
         *,
         clock: Clock = time.perf_counter,
-        on_change: Optional[Callable[[int, int], None]] = None,
+        on_change: Callable[[int, int], None] | None = None,
     ) -> None:
         self._sem = FairSemaphore(max_concurrent)
         self._max_queue_size = max_queue_size
@@ -202,6 +211,7 @@ class AdmissionController:
         return self._closed
 
     def snapshot(self) -> dict[str, float]:
+        """Current occupancy plus cumulative counters, for ``/admin/stats`` and logs."""
         return {
             "in_flight": self._in_flight,
             "queue_depth": self._queued,

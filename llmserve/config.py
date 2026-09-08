@@ -8,14 +8,15 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, fields
-from typing import Any, FrozenSet, Optional
+from typing import Any
+
 
 ENV_PREFIX = "LLMSERVE_"
 _TRUTHY = {"1", "true", "t", "yes", "y", "on"}
 _FALSY = {"0", "false", "f", "no", "n", "off"}
 
 
-def _raw(name: str) -> Optional[str]:
+def _raw(name: str) -> str | None:
     value = os.environ.get(ENV_PREFIX + name.upper())
     if value is None:
         return None
@@ -32,7 +33,7 @@ def _as_bool(value: str, name: str) -> bool:
     raise ValueError(f"{ENV_PREFIX}{name.upper()}: expected a boolean, got {value!r}")
 
 
-def _as_keys(value: str) -> FrozenSet[str]:
+def _as_keys(value: str) -> frozenset[str]:
     return frozenset(part.strip() for part in value.split(",") if part.strip())
 
 
@@ -43,7 +44,7 @@ class Settings:
     # --- backend -----------------------------------------------------------
     backend: str = "mock"
     model: str = "facebook/opt-125m"
-    served_model_name: Optional[str] = None
+    served_model_name: str | None = None
 
     # --- server ------------------------------------------------------------
     host: str = "0.0.0.0"
@@ -64,7 +65,7 @@ class Settings:
     stream_keepalive_s: float = 15.0
 
     # --- auth / observability ----------------------------------------------
-    api_keys: FrozenSet[str] = frozenset()
+    api_keys: frozenset[str] = frozenset()
     log_level: str = "INFO"
     log_json: bool = True
     enable_metrics: bool = True
@@ -79,7 +80,7 @@ class Settings:
     # --- vLLM engine args --------------------------------------------------
     vllm_tensor_parallel_size: int = 1
     vllm_gpu_memory_utilization: float = 0.90
-    vllm_max_model_len: Optional[int] = None
+    vllm_max_model_len: int | None = None
     vllm_dtype: str = "auto"
     vllm_enforce_eager: bool = False
     vllm_trust_remote_code: bool = False
@@ -92,6 +93,11 @@ class Settings:
 
     @classmethod
     def from_env(cls) -> "Settings":
+        """Build settings from ``LLMSERVE_*`` variables, falling back to the defaults.
+
+        Only variables that are actually set are read, so an unset knob keeps its
+        declared default rather than being coerced from an empty string.
+        """
         kwargs: dict[str, Any] = {}
         for f in fields(cls):
             raw = _raw(f.name)
@@ -103,6 +109,11 @@ class Settings:
         return settings
 
     def validate(self) -> None:
+        """Reject settings that would misbehave at runtime.
+
+        Called at construction time so a bad value fails the process at startup
+        rather than surfacing as a confusing error on the first request.
+        """
         if self.backend not in {"mock", "vllm"}:
             raise ValueError(f"backend must be 'mock' or 'vllm', got {self.backend!r}")
         if self.max_concurrent_requests < 1:

@@ -8,9 +8,11 @@ imported lazily so the rest of the package installs and tests without CUDA prese
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, AsyncIterator, Optional
+from collections.abc import AsyncIterator
+from typing import TYPE_CHECKING, Any
 
 from .base import GenerationRequest, InferenceEngine, TokenChunk
+
 
 if TYPE_CHECKING:  # pragma: no cover
     from ..config import Settings
@@ -106,7 +108,7 @@ class VLLMEngine(InferenceEngine):
         index = 0           # delta counter
         prompt_tokens = 0
         completion_tokens = 0
-        finish_reason: Optional[str] = None
+        finish_reason: str | None = None
 
         try:
             async for output in self._engine.generate(

@@ -7,9 +7,10 @@ import logging
 import sys
 import uuid
 from contextvars import ContextVar
-from typing import Any, Optional
+from typing import Any
 
-request_id_var: ContextVar[Optional[str]] = ContextVar("request_id", default=None)
+
+request_id_var: ContextVar[str | None] = ContextVar("request_id", default=None)
 
 _RESERVED = frozenset(
     logging.LogRecord("", 0, "", 0, "", (), None).__dict__.keys()
@@ -17,10 +18,13 @@ _RESERVED = frozenset(
 
 
 def new_request_id() -> str:
+    """Mint a correlation id for a request that arrived without one."""
     return f"req_{uuid.uuid4().hex[:24]}"
 
 
 class JsonFormatter(logging.Formatter):
+    """One JSON object per line, for log shippers that parse rather than regex."""
+
     def format(self, record: logging.LogRecord) -> str:
         payload: dict[str, Any] = {
             "ts": self.formatTime(record, "%Y-%m-%dT%H:%M:%S%z"),
@@ -40,6 +44,8 @@ class JsonFormatter(logging.Formatter):
 
 
 class TextFormatter(logging.Formatter):
+    """Human-readable single line, for local development."""
+
     def format(self, record: logging.LogRecord) -> str:
         rid = request_id_var.get()
         prefix = f"[{rid}] " if rid else ""
@@ -54,6 +60,12 @@ class TextFormatter(logging.Formatter):
 
 
 def configure_logging(level: str = "INFO", json_output: bool = True) -> None:
+    """Install a single root handler and route uvicorn's loggers through it.
+
+    uvicorn installs handlers of its own; left alone they produce a second, differently
+    formatted stream on the same stdout. Clearing them and enabling propagation keeps
+    every line in one format.
+    """
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(JsonFormatter() if json_output else TextFormatter())
     root = logging.getLogger()

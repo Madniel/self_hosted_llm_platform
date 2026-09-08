@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import logging
 import time
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from typing import AsyncIterator, Optional
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -20,6 +20,7 @@ from .errors import InvalidRequestError, ServiceError
 from .logging_setup import configure_logging, new_request_id, request_id_var
 from .routes import inference_router, ops_router
 from .service import AppContext
+
 
 logger = logging.getLogger(__name__)
 
@@ -37,9 +38,9 @@ def _error_response(exc: ServiceError) -> JSONResponse:
 
 
 def create_app(
-    settings: Optional[Settings] = None,
+    settings: Settings | None = None,
     *,
-    engine: Optional[InferenceEngine] = None,
+    engine: InferenceEngine | None = None,
     configure_logs: bool = True,
 ) -> FastAPI:
     """Build the ASGI app.
@@ -52,6 +53,14 @@ def create_app(
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        """Own the engine and the admission controller for the process lifetime.
+
+        Shutdown order matters and is the reason this is explicit: admission closes
+        *first* so ``/readyz`` starts failing and the load balancer drains us, then
+        in-flight generations are given ``drain_timeout_s`` to finish streaming, and
+        only then is the engine torn down. Tearing the engine down first would kill
+        responses that were already mid-flight to a client.
+        """
         inference_engine = engine or build_engine(settings)
 
         def on_change(in_flight: int, queued: int) -> None:
@@ -106,6 +115,12 @@ def create_app(
 
     @app.middleware("http")
     async def request_context(request: Request, call_next):
+        """Bind a request id to the context for the duration of the request.
+
+        An inbound ``X-Request-Id`` is honoured so a correlation id assigned upstream
+        survives into this service's logs; otherwise one is minted here. The id is
+        echoed back on the response alongside the server-side processing time.
+        """
         rid = request.headers.get("x-request-id") or new_request_id()
         token = request_id_var.set(rid)
         request.state.request_id = rid

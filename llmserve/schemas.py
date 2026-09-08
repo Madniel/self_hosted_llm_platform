@@ -8,9 +8,10 @@ from __future__ import annotations
 
 import time
 import uuid
-from typing import Any, List, Literal, Optional, Union
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+
 
 Role = Literal["system", "user", "assistant", "tool"]
 
@@ -32,15 +33,15 @@ class SamplingFields(_Base):
     presence_penalty: float = Field(default=0.0, ge=-2.0, le=2.0)
     frequency_penalty: float = Field(default=0.0, ge=-2.0, le=2.0)
     repetition_penalty: float = Field(default=1.0, gt=0.0)
-    stop: Union[str, List[str], None] = None
-    seed: Optional[int] = None
+    stop: str | list[str] | None = None
+    seed: int | None = None
     ignore_eos: bool = False
     stream: bool = False
-    user: Optional[str] = None
+    user: str | None = None
 
     @field_validator("stop")
     @classmethod
-    def _normalise_stop(cls, value: Union[str, List[str], None]) -> Optional[List[str]]:
+    def _normalise_stop(cls, value: str | list[str] | None) -> list[str] | None:
         if value is None:
             return None
         items = [value] if isinstance(value, str) else list(value)
@@ -56,16 +57,16 @@ class SamplingFields(_Base):
 class ChatMessage(_Base):
     role: Role
     content: str = ""
-    name: Optional[str] = None
+    name: str | None = None
 
 
 class CompletionRequest(SamplingFields):
-    model: Optional[str] = None
-    prompt: Union[str, List[str]]
+    model: str | None = None
+    prompt: str | list[str]
 
     @field_validator("prompt")
     @classmethod
-    def _single_prompt(cls, value: Union[str, List[str]]) -> str:
+    def _single_prompt(cls, value: str | list[str]) -> str:
         if isinstance(value, list):
             if len(value) != 1:
                 raise ValueError("batched prompts are not supported; send one prompt per request")
@@ -76,8 +77,8 @@ class CompletionRequest(SamplingFields):
 
 
 class ChatCompletionRequest(SamplingFields):
-    model: Optional[str] = None
-    messages: List[ChatMessage] = Field(min_length=1)
+    model: str | None = None
+    messages: list[ChatMessage] = Field(min_length=1)
 
 
 # ------------------------------------------------------------------------ responses
@@ -98,8 +99,8 @@ class Usage(_Base):
 class CompletionChoice(_Base):
     index: int = 0
     text: str = ""
-    finish_reason: Optional[str] = None
-    logprobs: Optional[Any] = None
+    finish_reason: str | None = None
+    logprobs: Any | None = None
 
 
 class CompletionResponse(_Base):
@@ -107,7 +108,7 @@ class CompletionResponse(_Base):
     object: Literal["text_completion"] = "text_completion"
     created: int = Field(default_factory=lambda: int(time.time()))
     model: str
-    choices: List[CompletionChoice]
+    choices: list[CompletionChoice]
     usage: Usage
 
 
@@ -119,7 +120,7 @@ class ChatChoiceMessage(_Base):
 class ChatCompletionChoice(_Base):
     index: int = 0
     message: ChatChoiceMessage
-    finish_reason: Optional[str] = None
+    finish_reason: str | None = None
 
 
 class ChatCompletionResponse(_Base):
@@ -127,7 +128,7 @@ class ChatCompletionResponse(_Base):
     object: Literal["chat.completion"] = "chat.completion"
     created: int = Field(default_factory=lambda: int(time.time()))
     model: str
-    choices: List[ChatCompletionChoice]
+    choices: list[ChatCompletionChoice]
     usage: Usage
 
 
@@ -135,7 +136,7 @@ class ChatCompletionResponse(_Base):
 class CompletionStreamChoice(_Base):
     index: int = 0
     text: str = ""
-    finish_reason: Optional[str] = None
+    finish_reason: str | None = None
 
 
 class CompletionStreamChunk(_Base):
@@ -143,19 +144,19 @@ class CompletionStreamChunk(_Base):
     object: Literal["text_completion"] = "text_completion"
     created: int = Field(default_factory=lambda: int(time.time()))
     model: str
-    choices: List[CompletionStreamChoice]
-    usage: Optional[Usage] = None
+    choices: list[CompletionStreamChoice]
+    usage: Usage | None = None
 
 
 class ChatDelta(_Base):
-    role: Optional[Role] = None
-    content: Optional[str] = None
+    role: Role | None = None
+    content: str | None = None
 
 
 class ChatCompletionStreamChoice(_Base):
     index: int = 0
     delta: ChatDelta = Field(default_factory=ChatDelta)
-    finish_reason: Optional[str] = None
+    finish_reason: str | None = None
 
 
 class ChatCompletionStreamChunk(_Base):
@@ -163,8 +164,8 @@ class ChatCompletionStreamChunk(_Base):
     object: Literal["chat.completion.chunk"] = "chat.completion.chunk"
     created: int = Field(default_factory=lambda: int(time.time()))
     model: str
-    choices: List[ChatCompletionStreamChoice]
-    usage: Optional[Usage] = None
+    choices: list[ChatCompletionStreamChoice]
+    usage: Usage | None = None
 
 
 # ----------------------------------------------------------------------- meta / ops
@@ -177,7 +178,7 @@ class ModelCard(_Base):
 
 class ModelList(_Base):
     object: Literal["list"] = "list"
-    data: List[ModelCard]
+    data: list[ModelCard]
 
 
 class HealthResponse(_Base):

@@ -17,7 +17,8 @@ from __future__ import annotations
 import asyncio
 import random
 import time
-from typing import AsyncIterator, Optional, Sequence
+from collections.abc import AsyncIterator, Sequence
+
 
 from .base import (
     GenerationRequest,
@@ -99,7 +100,7 @@ class MockEngine(InferenceEngine):
         self._active += 1
         emitted = 0
         text_so_far = ""
-        finish_reason: Optional[str] = "length"
+        finish_reason: str | None = "length"
         try:
             # Prefill: fixed overhead plus a term proportional to prompt length.
             await asyncio.sleep(

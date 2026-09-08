@@ -10,7 +10,7 @@ reported as a real HTTP status instead of an error buried inside a 200 stream.
 
 from __future__ import annotations
 
-from typing import Iterable, List, Optional
+from collections.abc import Iterable
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import StreamingResponse
@@ -43,7 +43,7 @@ router = APIRouter(tags=["inference"], dependencies=[Depends(require_api_key)])
 
 
 # ------------------------------------------------------------------ validation
-def _check_model(requested: Optional[str], ctx: AppContext) -> None:
+def _check_model(requested: str | None, ctx: AppContext) -> None:
     if requested in (None, "", "default", ctx.model_id, ctx.settings.model):
         return
     raise ModelNotFoundError(
@@ -95,6 +95,13 @@ async def create_completion(
     request: Request,
     ctx: AppContext = Depends(get_ctx),
 ):
+    """Text completion, streaming or buffered.
+
+    The lease is acquired before either response is built, and released on every
+    exit path: in the buffered case by the ``finally``, in the streaming case by
+    ``generate_stream`` once the body is exhausted -- with the ``except`` here
+    covering the narrow window where constructing the response itself fails.
+    """
     route = "completions"
     _check_model(body.model, ctx)
     _check_prompt(body.prompt, ctx)
@@ -169,6 +176,12 @@ async def create_chat_completion(
     request: Request,
     ctx: AppContext = Depends(get_ctx),
 ):
+    """Chat completion, streaming or buffered.
+
+    Identical in shape to :func:`create_completion`; the differences are that the
+    messages are flattened into a prompt first, and that the streaming encoders emit
+    the chat wire format, where the first delta carries the ``assistant`` role.
+    """
     route = "chat"
     _check_model(body.model, ctx)
     prompt = build_prompt([m.model_dump() for m in body.messages])
@@ -242,4 +255,4 @@ async def create_chat_completion(
         raise
 
 
-__all__: List[str] = ["router"]
+__all__: list[str] = ["router"]

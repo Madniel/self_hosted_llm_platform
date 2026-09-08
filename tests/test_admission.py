@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 import asyncio
-
-import pytest
-
 from llmserve.admission import AdmissionController, FairSemaphore
 from llmserve.errors import QueueFullError, QueueTimeoutError, ShuttingDownError
+
+import pytest
 
 
 async def test_runs_up_to_capacity_then_queues():

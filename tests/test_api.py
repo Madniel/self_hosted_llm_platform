@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import asyncio
 import json
+from tests.conftest import drain_sse
 
 import pytest
-
-from tests.conftest import drain_sse
 
 
 async def test_health_and_models(client):

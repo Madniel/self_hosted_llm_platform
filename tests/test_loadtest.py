@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+from asgi_lifespan import LifespanManager
+from llmserve.app import create_app
+
 import httpx
 import pytest
-from asgi_lifespan import LifespanManager
 
-from llmserve.app import create_app
 from loadtest.harness import (
     LoadConfig,
     RequestOutcome,

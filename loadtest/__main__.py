@@ -8,12 +8,11 @@ import json
 import sys
 from dataclasses import asdict
 from pathlib import Path
-from typing import List
 
 from .harness import LoadConfig, format_table, run_phase, run_sweep
 
 
-def _levels(raw: str) -> List[float]:
+def _levels(raw: str) -> list[float]:
     return [float(part) for part in raw.split(",") if part.strip()]
 
 

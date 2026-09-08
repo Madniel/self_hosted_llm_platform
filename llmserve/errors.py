@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 
 class ServiceError(Exception):
@@ -11,15 +11,16 @@ class ServiceError(Exception):
     http_status: int = 500
     error_type: str = "server_error"
     code: str = "internal_error"
-    retry_after: Optional[float] = None
+    retry_after: float | None = None
 
-    def __init__(self, message: str, *, retry_after: Optional[float] = None) -> None:
+    def __init__(self, message: str, *, retry_after: float | None = None) -> None:
         super().__init__(message)
         self.message = message
         if retry_after is not None:
             self.retry_after = retry_after
 
     def to_payload(self) -> dict[str, Any]:
+        """Render as an OpenAI-shaped error body, so clients can parse it as usual."""
         return {
             "error": {
                 "message": self.message,

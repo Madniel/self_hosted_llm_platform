@@ -7,8 +7,8 @@ mock (or for a remote OpenAI-compatible upstream) never touches the serving laye
 from __future__ import annotations
 
 import abc
+from collections.abc import AsyncIterator, Sequence
 from dataclasses import dataclass, field
-from typing import AsyncIterator, List, Optional, Sequence
 
 
 @dataclass(frozen=True)
@@ -21,7 +21,7 @@ class SamplingConfig:
     frequency_penalty: float = 0.0
     repetition_penalty: float = 1.0
     stop: Sequence[str] = field(default_factory=tuple)
-    seed: Optional[int] = None
+    seed: int | None = None
     ignore_eos: bool = False
 
 
@@ -42,7 +42,7 @@ class TokenChunk:
 
     text: str
     index: int
-    finish_reason: Optional[str] = None
+    finish_reason: str | None = None
     prompt_tokens: int = 0
     completion_tokens: int = 0
 
@@ -96,7 +96,7 @@ def estimate_tokens(text: str) -> int:
     return max(1, len(text) // 4)
 
 
-__all__: List[str] = [
+__all__: list[str] = [
     "GenerationRequest",
     "InferenceEngine",
     "SamplingConfig",
