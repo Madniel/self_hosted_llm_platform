@@ -1,0 +1,111 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Admission control under overload</title>
+<style>
+:root { color-scheme:light; --surface:#fcfcfb; --plane:#f9f9f7; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781; --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,0.10); --s-off:#898781; --s-good:#2a78d6; --s-shed:#eb6834; --s-p50:#86b6ef; --s-p95:#1c5cab; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { color-scheme:dark; --surface:#1a1a19; --plane:#0d0d0d; --ink:#ffffff; --ink2:#c3c2b7; --muted:#898781; --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10); --s-off:#898781; --s-good:#3987e5; --s-shed:#d95926; --s-p50:#6da7ec; --s-p95:#9ec5f4; }
+}
+:root[data-theme="dark"] { color-scheme:dark; --surface:#1a1a19; --plane:#0d0d0d; --ink:#ffffff; --ink2:#c3c2b7; --muted:#898781; --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10); --s-off:#898781; --s-good:#3987e5; --s-shed:#d95926; --s-p50:#6da7ec; --s-p95:#9ec5f4; }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--plane); color:var(--ink);
+  font:14px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif; }
+.wrap { max-width:820px; margin:0 auto; padding:32px 20px 56px; }
+h1 { font-size:22px; margin:0 0 4px; letter-spacing:-0.01em; }
+.sub { color:var(--ink2); margin:0 0 24px; }
+.hero { background:var(--surface); border:1px solid var(--border); border-radius:10px;
+  padding:18px 20px; margin-bottom:24px; }
+.hero b { display:block; font-size:40px; line-height:1.1; letter-spacing:-0.02em; }
+.hero span { color:var(--ink2); }
+.panel { margin:0 0 26px; background:var(--surface); border:1px solid var(--border);
+  border-radius:10px; padding:16px 12px 8px; overflow-x:auto; }
+figcaption { padding:0 8px; }
+h3 { font-size:15px; margin:0 0 2px; }
+figcaption p { margin:0 0 6px; color:var(--ink2); font-size:13px; }
+svg { display:block; width:100%; height:auto; min-width:560px; }
+.grid { stroke:var(--grid); stroke-width:1; }
+.baseline { stroke:var(--axis); stroke-width:1; }
+.tick, .axis-name { fill:var(--muted); font-size:11px; font-variant-numeric:tabular-nums; }
+.line { stroke-width:2; stroke-linejoin:round; stroke-linecap:round; }
+.dot { stroke:var(--surface); stroke-width:2; }
+.dlabel { font-size:12px; font-weight:600; }
+.hit { fill:transparent; } .hit:hover { fill:var(--grid); opacity:.45; }
+.s-off { stroke:var(--s-off); } .dot.s-off { fill:var(--s-off); } text.s-off { fill:var(--ink2); stroke:none; }
+.s-good { stroke:var(--s-good); } .dot.s-good { fill:var(--s-good); } text.s-good { fill:var(--ink); stroke:none; }
+.s-shed { stroke:var(--s-shed); } .dot.s-shed { fill:var(--s-shed); } text.s-shed { fill:var(--ink); stroke:none; }
+.s-p50 { stroke:var(--s-p50); } .dot.s-p50 { fill:var(--s-p50); } text.s-p50 { fill:var(--ink); stroke:none; }
+.s-p95 { stroke:var(--s-p95); } .dot.s-p95 { fill:var(--s-p95); } text.s-p95 { fill:var(--ink); stroke:none; }
+.key { display:flex; gap:16px; flex-wrap:wrap; padding:0 8px 10px; color:var(--ink2); font-size:12px; }
+.key i { display:inline-block; width:14px; height:2px; vertical-align:middle; margin-right:6px; }
+table { border-collapse:collapse; width:100%; font-size:12px; font-variant-numeric:tabular-nums; }
+caption { text-align:left; font-weight:600; padding:0 0 8px; font-size:13px; }
+th,td { text-align:right; padding:5px 8px; border-bottom:1px solid var(--grid); }
+th:first-child,td:first-child { text-align:left; }
+th { color:var(--ink2); font-weight:600; }
+footer { color:var(--muted); font-size:12px; margin-top:22px; }
+</style>
+<div class="wrap">
+<h1>Admission control under overload</h1>
+<p class="sub">Bounded concurrency (8 slots) over a bounded FIFO queue
+(16 deep), 64 tokens per request.</p>
+
+<div class="hero">
+  <span>Goodput across a 16&times; range of offered load</span>
+  <b>4.0&ndash;4.2 req/s</b>
+  <span>0 failed requests. Everything above capacity was refused in milliseconds, not queued indefinitely.</span>
+</div>
+
+<div class="key">
+  <span><i style="background:var(--s-off)"></i>offered</span>
+  <span><i style="background:var(--s-good)"></i>goodput (succeeded)</span>
+  <span><i style="background:var(--s-shed)"></i>shed (429/503)</span>
+</div>
+<figure class="panel">
+  <figcaption><h3>Goodput holds flat while the excess is shed</h3><p>Offered load rises 2&rarr;32 rps. Successful throughput does not move.</p></figcaption>
+  <svg viewBox="0 0 720 300" role="img" aria-label="Goodput holds flat while the excess is shed. Offered load rises 2&rarr;32 rps. Successful throughput does not move.">
+    <text x="54" y="16" class="axis-name" text-anchor="end">req/s</text>
+    <line x1="64" y1="256.0" x2="628" y2="256.0" class="grid"/><line x1="64" y1="199.0" x2="628" y2="199.0" class="grid"/><line x1="64" y1="142.0" x2="628" y2="142.0" class="grid"/><line x1="64" y1="85.0" x2="628" y2="85.0" class="grid"/><line x1="64" y1="28.0" x2="628" y2="28.0" class="grid"/>
+    <line x1="64" y1="256" x2="628" y2="256" class="baseline"/>
+    <text x="54" y="260.0" class="tick" text-anchor="end">0</text><text x="54" y="203.0" class="tick" text-anchor="end">10</text><text x="54" y="146.0" class="tick" text-anchor="end">20</text><text x="54" y="89.0" class="tick" text-anchor="end">30</text><text x="54" y="32.0" class="tick" text-anchor="end">40</text><text x="64.0" y="276" class="tick" text-anchor="middle">2</text><text x="101.6" y="276" class="tick" text-anchor="middle">4</text><text x="139.2" y="276" class="tick" text-anchor="middle">6</text><text x="176.8" y="276" class="tick" text-anchor="middle">8</text><text x="252.0" y="276" class="tick" text-anchor="middle">12</text><text x="327.2" y="276" class="tick" text-anchor="middle">16</text><text x="477.6" y="276" class="tick" text-anchor="middle">24</text><text x="628.0" y="276" class="tick" text-anchor="middle">32</text>
+    <path d="M64.0 245.6 L101.6 233.2 L139.2 216.6 L176.8 206.6 L252.0 189.5 L327.2 165.3 L477.6 118.7 L628.0 72.2" fill="none" class="line s-off" stroke-dasharray="5 4"/><circle cx="64.0" cy="245.6" r="4" class="dot s-off"/><circle cx="101.6" cy="233.2" r="4" class="dot s-off"/><circle cx="139.2" cy="216.6" r="4" class="dot s-off"/><circle cx="176.8" cy="206.6" r="4" class="dot s-off"/><circle cx="252.0" cy="189.5" r="4" class="dot s-off"/><circle cx="327.2" cy="165.3" r="4" class="dot s-off"/><circle cx="477.6" cy="118.7" r="4" class="dot s-off"/><circle cx="628.0" cy="72.2" r="4" class="dot s-off"/><path d="M64.0 245.6 L101.6 235.1 L139.2 231.8 L176.8 231.8 L252.0 233.2 L327.2 233.2 L477.6 233.2 L628.0 233.2" fill="none" class="line s-good"/><circle cx="64.0" cy="245.6" r="4" class="dot s-good"/><circle cx="101.6" cy="235.1" r="4" class="dot s-good"/><circle cx="139.2" cy="231.8" r="4" class="dot s-good"/><circle cx="176.8" cy="231.8" r="4" class="dot s-good"/><circle cx="252.0" cy="233.2" r="4" class="dot s-good"/><circle cx="327.2" cy="233.2" r="4" class="dot s-good"/><circle cx="477.6" cy="233.2" r="4" class="dot s-good"/><circle cx="628.0" cy="233.2" r="4" class="dot s-good"/><path d="M64.0 256.0 L101.6 256.0 L139.2 246.0 L176.8 232.2 L252.0 214.2 L327.2 190.0 L477.6 142.0 L628.0 95.4" fill="none" class="line s-shed"/><circle cx="64.0" cy="256.0" r="4" class="dot s-shed"/><circle cx="101.6" cy="256.0" r="4" class="dot s-shed"/><circle cx="139.2" cy="246.0" r="4" class="dot s-shed"/><circle cx="176.8" cy="232.2" r="4" class="dot s-shed"/><circle cx="252.0" cy="214.2" r="4" class="dot s-shed"/><circle cx="327.2" cy="190.0" r="4" class="dot s-shed"/><circle cx="477.6" cy="142.0" r="4" class="dot s-shed"/><circle cx="628.0" cy="95.4" r="4" class="dot s-shed"/>
+    <text x="638.0" y="76.2" class="dlabel s-off">offered</text><text x="638.0" y="99.4" class="dlabel s-shed">shed</text><text x="638.0" y="237.2" class="dlabel s-good">goodput</text>
+    <rect x="50.0" y="28" width="28" height="228" class="hit"><title>2 rps offered&#10;offered: 2&#10;goodput: 2&#10;shed: 0</title></rect><rect x="87.6" y="28" width="28" height="228" class="hit"><title>4 rps offered&#10;offered: 4&#10;goodput: 4&#10;shed: 0</title></rect><rect x="125.2" y="28" width="28" height="228" class="hit"><title>6 rps offered&#10;offered: 7&#10;goodput: 4&#10;shed: 2</title></rect><rect x="162.8" y="28" width="28" height="228" class="hit"><title>8 rps offered&#10;offered: 9&#10;goodput: 4&#10;shed: 4</title></rect><rect x="238.0" y="28" width="28" height="228" class="hit"><title>12 rps offered&#10;offered: 12&#10;goodput: 4&#10;shed: 7</title></rect><rect x="313.2" y="28" width="28" height="228" class="hit"><title>16 rps offered&#10;offered: 16&#10;goodput: 4&#10;shed: 12</title></rect><rect x="463.6" y="28" width="28" height="228" class="hit"><title>24 rps offered&#10;offered: 24&#10;goodput: 4&#10;shed: 20</title></rect><rect x="614.0" y="28" width="28" height="228" class="hit"><title>32 rps offered&#10;offered: 32&#10;goodput: 4&#10;shed: 28</title></rect>
+    <text x="346" y="294" class="axis-name" text-anchor="middle">offered load (requests/sec)</text>
+  </svg>
+</figure>
+<figure class="panel">
+  <figcaption><h3>Queue wait is what degrades, and it is bounded</h3><p>Time to first token, measured from arrival &mdash; so queue wait is inside it.</p></figcaption>
+  <svg viewBox="0 0 720 300" role="img" aria-label="Queue wait is what degrades, and it is bounded. Time to first token, measured from arrival &mdash; so queue wait is inside it.">
+    <text x="54" y="16" class="axis-name" text-anchor="end">ms</text>
+    <line x1="64" y1="256.0" x2="628" y2="256.0" class="grid"/><line x1="64" y1="199.0" x2="628" y2="199.0" class="grid"/><line x1="64" y1="142.0" x2="628" y2="142.0" class="grid"/><line x1="64" y1="85.0" x2="628" y2="85.0" class="grid"/><line x1="64" y1="28.0" x2="628" y2="28.0" class="grid"/>
+    <line x1="64" y1="256" x2="628" y2="256" class="baseline"/>
+    <text x="54" y="260.0" class="tick" text-anchor="end">0</text><text x="54" y="203.0" class="tick" text-anchor="end">1000</text><text x="54" y="146.0" class="tick" text-anchor="end">2000</text><text x="54" y="89.0" class="tick" text-anchor="end">3000</text><text x="54" y="32.0" class="tick" text-anchor="end">4000</text><text x="64.0" y="276" class="tick" text-anchor="middle">2</text><text x="101.6" y="276" class="tick" text-anchor="middle">4</text><text x="139.2" y="276" class="tick" text-anchor="middle">6</text><text x="176.8" y="276" class="tick" text-anchor="middle">8</text><text x="252.0" y="276" class="tick" text-anchor="middle">12</text><text x="327.2" y="276" class="tick" text-anchor="middle">16</text><text x="477.6" y="276" class="tick" text-anchor="middle">24</text><text x="628.0" y="276" class="tick" text-anchor="middle">32</text>
+    <path d="M64.0 244.4 L101.6 188.8 L139.2 56.0 L176.8 34.1 L252.0 32.3 L327.2 33.5 L477.6 32.6 L628.0 33.5" fill="none" class="line s-p95"/><circle cx="64.0" cy="244.4" r="4" class="dot s-p95"/><circle cx="101.6" cy="188.8" r="4" class="dot s-p95"/><circle cx="139.2" cy="56.0" r="4" class="dot s-p95"/><circle cx="176.8" cy="34.1" r="4" class="dot s-p95"/><circle cx="252.0" cy="32.3" r="4" class="dot s-p95"/><circle cx="327.2" cy="33.5" r="4" class="dot s-p95"/><circle cx="477.6" cy="32.6" r="4" class="dot s-p95"/><circle cx="628.0" cy="33.5" r="4" class="dot s-p95"/><path d="M64.0 247.6 L101.6 244.5 L139.2 136.1 L176.8 63.7 L252.0 41.4 L327.2 43.9 L477.6 38.2 L628.0 38.6" fill="none" class="line s-p50"/><circle cx="64.0" cy="247.6" r="4" class="dot s-p50"/><circle cx="101.6" cy="244.5" r="4" class="dot s-p50"/><circle cx="139.2" cy="136.1" r="4" class="dot s-p50"/><circle cx="176.8" cy="63.7" r="4" class="dot s-p50"/><circle cx="252.0" cy="41.4" r="4" class="dot s-p50"/><circle cx="327.2" cy="43.9" r="4" class="dot s-p50"/><circle cx="477.6" cy="38.2" r="4" class="dot s-p50"/><circle cx="628.0" cy="38.6" r="4" class="dot s-p50"/>
+    <text x="638.0" y="37.5" class="dlabel s-p95">p95</text><text x="638.0" y="50.5" class="dlabel s-p50">p50</text>
+    <rect x="50.0" y="28" width="28" height="228" class="hit"><title>2 rps offered&#10;p95: 204&#10;p50: 146</title></rect><rect x="87.6" y="28" width="28" height="228" class="hit"><title>4 rps offered&#10;p95: 1179&#10;p50: 203</title></rect><rect x="125.2" y="28" width="28" height="228" class="hit"><title>6 rps offered&#10;p95: 3510&#10;p50: 2103</title></rect><rect x="162.8" y="28" width="28" height="228" class="hit"><title>8 rps offered&#10;p95: 3893&#10;p50: 3373</title></rect><rect x="238.0" y="28" width="28" height="228" class="hit"><title>12 rps offered&#10;p95: 3925&#10;p50: 3765</title></rect><rect x="313.2" y="28" width="28" height="228" class="hit"><title>16 rps offered&#10;p95: 3903&#10;p50: 3720</title></rect><rect x="463.6" y="28" width="28" height="228" class="hit"><title>24 rps offered&#10;p95: 3919&#10;p50: 3821</title></rect><rect x="614.0" y="28" width="28" height="228" class="hit"><title>32 rps offered&#10;p95: 3904&#10;p50: 3814</title></rect>
+    <text x="346" y="294" class="axis-name" text-anchor="middle">offered load (requests/sec)</text>
+  </svg>
+</figure>
+<figure class="panel">
+  <figcaption><h3>Tokens keep flowing at the same pace for whoever got in</h3><p>Inter-token latency, p50. Bounded concurrency means the engine is never oversubscribed.</p></figcaption>
+  <svg viewBox="0 0 720 300" role="img" aria-label="Tokens keep flowing at the same pace for whoever got in. Inter-token latency, p50. Bounded concurrency means the engine is never oversubscribed.">
+    <text x="54" y="16" class="axis-name" text-anchor="end">ms</text>
+    <line x1="64" y1="256.0" x2="628" y2="256.0" class="grid"/><line x1="64" y1="199.0" x2="628" y2="199.0" class="grid"/><line x1="64" y1="142.0" x2="628" y2="142.0" class="grid"/><line x1="64" y1="85.0" x2="628" y2="85.0" class="grid"/><line x1="64" y1="28.0" x2="628" y2="28.0" class="grid"/>
+    <line x1="64" y1="256" x2="628" y2="256" class="baseline"/>
+    <text x="54" y="260.0" class="tick" text-anchor="end">0</text><text x="54" y="203.0" class="tick" text-anchor="end">10</text><text x="54" y="146.0" class="tick" text-anchor="end">20</text><text x="54" y="89.0" class="tick" text-anchor="end">30</text><text x="54" y="32.0" class="tick" text-anchor="end">40</text><text x="64.0" y="276" class="tick" text-anchor="middle">2</text><text x="101.6" y="276" class="tick" text-anchor="middle">4</text><text x="139.2" y="276" class="tick" text-anchor="middle">6</text><text x="176.8" y="276" class="tick" text-anchor="middle">8</text><text x="252.0" y="276" class="tick" text-anchor="middle">12</text><text x="327.2" y="276" class="tick" text-anchor="middle">16</text><text x="477.6" y="276" class="tick" text-anchor="middle">24</text><text x="628.0" y="276" class="tick" text-anchor="middle">32</text>
+    <path d="M64.0 133.7 L101.6 112.6 L139.2 106.1 L176.8 106.5 L252.0 106.1 L327.2 106.5 L477.6 105.6 L628.0 106.3" fill="none" class="line s-good"/><circle cx="64.0" cy="133.7" r="4" class="dot s-good"/><circle cx="101.6" cy="112.6" r="4" class="dot s-good"/><circle cx="139.2" cy="106.1" r="4" class="dot s-good"/><circle cx="176.8" cy="106.5" r="4" class="dot s-good"/><circle cx="252.0" cy="106.1" r="4" class="dot s-good"/><circle cx="327.2" cy="106.5" r="4" class="dot s-good"/><circle cx="477.6" cy="105.6" r="4" class="dot s-good"/><circle cx="628.0" cy="106.3" r="4" class="dot s-good"/>
+    <text x="638.0" y="110.3" class="dlabel s-good">p50</text>
+    <rect x="50.0" y="28" width="28" height="228" class="hit"><title>2 rps offered&#10;p50: 21</title></rect><rect x="87.6" y="28" width="28" height="228" class="hit"><title>4 rps offered&#10;p50: 25</title></rect><rect x="125.2" y="28" width="28" height="228" class="hit"><title>6 rps offered&#10;p50: 26</title></rect><rect x="162.8" y="28" width="28" height="228" class="hit"><title>8 rps offered&#10;p50: 26</title></rect><rect x="238.0" y="28" width="28" height="228" class="hit"><title>12 rps offered&#10;p50: 26</title></rect><rect x="313.2" y="28" width="28" height="228" class="hit"><title>16 rps offered&#10;p50: 26</title></rect><rect x="463.6" y="28" width="28" height="228" class="hit"><title>24 rps offered&#10;p50: 26</title></rect><rect x="614.0" y="28" width="28" height="228" class="hit"><title>32 rps offered&#10;p50: 26</title></rect>
+    <text x="346" y="294" class="axis-name" text-anchor="middle">offered load (requests/sec)</text>
+  </svg>
+</figure>
+
+<table>
+  <caption>Measured values</caption>
+  <thead><tr><th>offered</th><th>arrived/s</th><th>goodput/s</th><th>shed/s</th>
+  <th>shed %</th><th>TTFT p50 ms</th><th>TTFT p95 ms</th><th>ITL p50 ms</th></tr></thead>
+  <tbody><tr><td>2</td><td>1.8</td><td>1.83</td><td>0.0</td><td>0%</td><td>146</td><td>204</td><td>21</td></tr><tr><td>4</td><td>4.0</td><td>3.67</td><td>0.0</td><td>0%</td><td>203</td><td>1179</td><td>25</td></tr><tr><td>6</td><td>6.9</td><td>4.25</td><td>1.8</td><td>29%</td><td>2103</td><td>3510</td><td>26</td></tr><tr><td>8</td><td>8.7</td><td>4.25</td><td>4.2</td><td>50%</td><td>3373</td><td>3893</td><td>26</td></tr><tr><td>12</td><td>11.7</td><td>4.00</td><td>7.3</td><td>65%</td><td>3765</td><td>3925</td><td>26</td></tr><tr><td>16</td><td>15.9</td><td>4.00</td><td>11.6</td><td>74%</td><td>3720</td><td>3903</td><td>26</td></tr><tr><td>24</td><td>24.1</td><td>4.00</td><td>20.0</td><td>83%</td><td>3821</td><td>3919</td><td>26</td></tr><tr><td>32</td><td>32.2</td><td>4.00</td><td>28.2</td><td>88%</td><td>3814</td><td>3904</td><td>26</td></tr></tbody>
+</table>
+<footer>Source: in-process (no HTTP layer). Seed 7,
+16.0s per level.</footer>
+</div>

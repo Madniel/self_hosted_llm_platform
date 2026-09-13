@@ -1,0 +1,545 @@
+{
+  "config": {
+    "source": "in-process (no HTTP layer)",
+    "max_concurrent": 8,
+    "max_queue_size": 16,
+    "queue_timeout_s": 15.0,
+    "max_tokens": 64,
+    "prompt_words": 60,
+    "duration_s": 16.0,
+    "warmup_s": 4.0,
+    "seed": 7
+  },
+  "phases": [
+    {
+      "label": "2 rps",
+      "concurrency": 8,
+      "rps_target": 2.0,
+      "wall_s": 12.0,
+      "in_flight_at_close": 3,
+      "arrivals_in_window": 22,
+      "issued": 22,
+      "succeeded": 22,
+      "rejected": 0,
+      "failed": 0,
+      "throughput_rps": 1.8333333333333333,
+      "goodput_rps": 1.8333333333333333,
+      "output_tokens": 1408,
+      "output_tps": 117.33333333333333,
+      "ttft": {
+        "n": 22,
+        "mean": 0.15665641440908343,
+        "p50": 0.14649500050006736,
+        "p90": 0.18991512309995642,
+        "p95": 0.2041522986500297,
+        "p99": 0.20770805911994897,
+        "max": 0.20845637899992653
+      },
+      "itl": {
+        "n": 1386,
+        "mean": 0.02145491087373728,
+        "p50": 0.02145226800001865,
+        "p90": 0.025786465500061695,
+        "p95": 0.026773834500005478,
+        "p99": 0.027957865600018294,
+        "max": 0.029816359000051307
+      },
+      "e2e": {
+        "n": 22,
+        "mean": 1.5083547097727164,
+        "p50": 1.5141144979999694,
+        "p90": 1.5948248178999165,
+        "p95": 1.6244872130500085,
+        "p99": 1.6273780805800209,
+        "max": 1.6277443210000229
+      },
+      "reject_reasons": {},
+      "status_codes": {
+        "200": 22
+      },
+      "server_stats": {
+        "in_flight": 0,
+        "queue_depth": 0,
+        "max_concurrency": 8,
+        "max_queue_size": 16,
+        "accepting": true,
+        "admitted": 33,
+        "completed": 33,
+        "rejected_queue_full": 0,
+        "rejected_timeout": 0,
+        "rejected_shutdown": 0,
+        "peak_queue_depth": 1,
+        "peak_in_flight": 7,
+        "total_queue_wait_s": 0.00016907400004129158,
+        "rejected": 0,
+        "mean_queue_wait_s": 5.123454546705806e-06
+      }
+    },
+    {
+      "label": "4 rps",
+      "concurrency": 8,
+      "rps_target": 4.0,
+      "wall_s": 12.0,
+      "in_flight_at_close": 9,
+      "arrivals_in_window": 48,
+      "issued": 44,
+      "succeeded": 44,
+      "rejected": 0,
+      "failed": 0,
+      "throughput_rps": 3.6666666666666665,
+      "goodput_rps": 3.6666666666666665,
+      "output_tokens": 2816,
+      "output_tps": 234.66666666666666,
+      "ttft": {
+        "n": 44,
+        "mean": 0.37536830465909204,
+        "p50": 0.2025661734999744,
+        "p90": 0.9066199287999326,
+        "p95": 1.179172468150091,
+        "p99": 1.2821653841599778,
+        "max": 1.3366564839999455
+      },
+      "itl": {
+        "n": 2772,
+        "mean": 0.025202782164862925,
+        "p50": 0.02515999299998839,
+        "p90": 0.030524294000019835,
+        "p95": 0.03149677255000825,
+        "p99": 0.03251585651997175,
+        "max": 0.03694219499993778
+      },
+      "e2e": {
+        "n": 44,
+        "mean": 1.9631826273409094,
+        "p50": 1.8166891839999835,
+        "p90": 2.583536941599925,
+        "p95": 2.8099539732000043,
+        "p99": 2.940971721490008,
+        "max": 3.014151855000023
+      },
+      "reject_reasons": {},
+      "status_codes": {
+        "200": 44
+      },
+      "server_stats": {
+        "in_flight": 0,
+        "queue_depth": 0,
+        "max_concurrency": 8,
+        "max_queue_size": 16,
+        "accepting": true,
+        "admitted": 64,
+        "completed": 64,
+        "rejected_queue_full": 0,
+        "rejected_timeout": 0,
+        "rejected_shutdown": 0,
+        "peak_queue_depth": 6,
+        "peak_in_flight": 8,
+        "total_queue_wait_s": 15.324014150000266,
+        "rejected": 0,
+        "mean_queue_wait_s": 0.23943772109375416
+      }
+    },
+    {
+      "label": "6 rps",
+      "concurrency": 8,
+      "rps_target": 6.0,
+      "wall_s": 12.0,
+      "in_flight_at_close": 17,
+      "arrivals_in_window": 83,
+      "issued": 72,
+      "succeeded": 51,
+      "rejected": 21,
+      "failed": 0,
+      "throughput_rps": 6.0,
+      "goodput_rps": 4.25,
+      "output_tokens": 3264,
+      "output_tps": 272.0,
+      "ttft": {
+        "n": 51,
+        "mean": 2.25854252652941,
+        "p50": 2.1028302519999897,
+        "p90": 3.423880592000046,
+        "p95": 3.509504012499974,
+        "p99": 3.716945118500064,
+        "max": 3.8626967570000943
+      },
+      "itl": {
+        "n": 3213,
+        "mean": 0.026344135106131223,
+        "p50": 0.02630598700000064,
+        "p90": 0.03143808039994837,
+        "p95": 0.03209417820003182,
+        "p99": 0.03265654363993235,
+        "max": 0.0514509839999846
+      },
+      "e2e": {
+        "n": 51,
+        "mean": 3.9182619339607743,
+        "p50": 3.7821302190000097,
+        "p90": 5.097214083999916,
+        "p95": 5.17660438899992,
+        "p99": 5.375936952000075,
+        "max": 5.545802311000102
+      },
+      "reject_reasons": {
+        "queue_full": 21
+      },
+      "status_codes": {
+        "200": 51,
+        "429": 21
+      },
+      "server_stats": {
+        "in_flight": 0,
+        "queue_depth": 0,
+        "max_concurrency": 8,
+        "max_queue_size": 16,
+        "accepting": true,
+        "admitted": 80,
+        "completed": 80,
+        "rejected_queue_full": 21,
+        "rejected_timeout": 0,
+        "rejected_shutdown": 0,
+        "peak_queue_depth": 16,
+        "peak_in_flight": 8,
+        "total_queue_wait_s": 154.27298263799958,
+        "rejected": 21,
+        "mean_queue_wait_s": 1.9284122829749948
+      }
+    },
+    {
+      "label": "8 rps",
+      "concurrency": 8,
+      "rps_target": 8.0,
+      "wall_s": 12.0,
+      "in_flight_at_close": 15,
+      "arrivals_in_window": 104,
+      "issued": 101,
+      "succeeded": 51,
+      "rejected": 50,
+      "failed": 0,
+      "throughput_rps": 8.416666666666666,
+      "goodput_rps": 4.25,
+      "output_tokens": 3264,
+      "output_tps": 272.0,
+      "ttft": {
+        "n": 51,
+        "mean": 3.0712354502548944,
+        "p50": 3.3729518600000574,
+        "p90": 3.8822008359999245,
+        "p95": 3.8926897889999736,
+        "p99": 3.9139897555000402,
+        "max": 3.916338468000049
+      },
+      "itl": {
+        "n": 3213,
+        "mean": 0.026293941155617957,
+        "p50": 0.02622269599999072,
+        "p90": 0.031420260999971104,
+        "p95": 0.032005107000077256,
+        "p99": 0.03262583551998887,
+        "max": 0.03351713799997924
+      },
+      "e2e": {
+        "n": 51,
+        "mean": 4.727790382294114,
+        "p50": 5.006638232,
+        "p90": 5.51345638600003,
+        "p95": 5.537947229999986,
+        "p99": 5.584658724000008,
+        "max": 5.58570639800007
+      },
+      "reject_reasons": {
+        "queue_full": 50
+      },
+      "status_codes": {
+        "200": 51,
+        "429": 50
+      },
+      "server_stats": {
+        "in_flight": 0,
+        "queue_depth": 0,
+        "max_concurrency": 8,
+        "max_queue_size": 16,
+        "accepting": true,
+        "admitted": 80,
+        "completed": 80,
+        "rejected_queue_full": 51,
+        "rejected_timeout": 0,
+        "rejected_shutdown": 0,
+        "peak_queue_depth": 16,
+        "peak_in_flight": 8,
+        "total_queue_wait_s": 196.50086332200033,
+        "rejected": 51,
+        "mean_queue_wait_s": 2.456260791525004
+      }
+    },
+    {
+      "label": "12 rps",
+      "concurrency": 8,
+      "rps_target": 12.0,
+      "wall_s": 12.0,
+      "in_flight_at_close": 17,
+      "arrivals_in_window": 140,
+      "issued": 136,
+      "succeeded": 48,
+      "rejected": 88,
+      "failed": 0,
+      "throughput_rps": 11.333333333333334,
+      "goodput_rps": 4.0,
+      "output_tokens": 3072,
+      "output_tps": 256.0,
+      "ttft": {
+        "n": 48,
+        "mean": 3.5575097412500036,
+        "p50": 3.764841626000077,
+        "p90": 3.8869501381999614,
+        "p95": 3.9247529957500036,
+        "p99": 3.9333212056400124,
+        "max": 3.9350750990000734
+      },
+      "itl": {
+        "n": 3024,
+        "mean": 0.02632843471990731,
+        "p50": 0.026297740000018166,
+        "p90": 0.03136300979998623,
+        "p95": 0.032034087150049115,
+        "p99": 0.03259546700004762,
+        "max": 0.03402494699992076
+      },
+      "e2e": {
+        "n": 48,
+        "mean": 5.216234196333336,
+        "p50": 5.406011639000042,
+        "p90": 5.560970051200002,
+        "p95": 5.602682792900003,
+        "p99": 5.622896031579979,
+        "max": 5.62906646700003
+      },
+      "reject_reasons": {
+        "queue_full": 88
+      },
+      "status_codes": {
+        "200": 48,
+        "429": 88
+      },
+      "server_stats": {
+        "in_flight": 0,
+        "queue_depth": 0,
+        "max_concurrency": 8,
+        "max_queue_size": 16,
+        "accepting": true,
+        "admitted": 80,
+        "completed": 80,
+        "rejected_queue_full": 101,
+        "rejected_timeout": 0,
+        "rejected_shutdown": 0,
+        "peak_queue_depth": 16,
+        "peak_in_flight": 8,
+        "total_queue_wait_s": 222.47470520999968,
+        "rejected": 101,
+        "mean_queue_wait_s": 2.780933815124996
+      }
+    },
+    {
+      "label": "16 rps",
+      "concurrency": 8,
+      "rps_target": 16.0,
+      "wall_s": 12.0,
+      "in_flight_at_close": 17,
+      "arrivals_in_window": 191,
+      "issued": 187,
+      "succeeded": 48,
+      "rejected": 139,
+      "failed": 0,
+      "throughput_rps": 15.583333333333334,
+      "goodput_rps": 4.0,
+      "output_tokens": 3072,
+      "output_tps": 256.0,
+      "ttft": {
+        "n": 48,
+        "mean": 3.6066709437083397,
+        "p50": 3.7203913585000237,
+        "p90": 3.877521562800041,
+        "p95": 3.903086892499965,
+        "p99": 3.917776216849975,
+        "max": 3.923890138999923
+      },
+      "itl": {
+        "n": 3024,
+        "mean": 0.026250041802910046,
+        "p50": 0.026222661499957667,
+        "p90": 0.03137614439998515,
+        "p95": 0.03183498820001773,
+        "p99": 0.03260194317997048,
+        "max": 0.033625372000074094
+      },
+      "e2e": {
+        "n": 48,
+        "mean": 5.26045523037502,
+        "p50": 5.382675354000014,
+        "p90": 5.542936202400063,
+        "p95": 5.573746907500015,
+        "p99": 5.606961751990039,
+        "max": 5.627552303000016
+      },
+      "reject_reasons": {
+        "queue_full": 139
+      },
+      "status_codes": {
+        "200": 48,
+        "429": 139
+      },
+      "server_stats": {
+        "in_flight": 0,
+        "queue_depth": 0,
+        "max_concurrency": 8,
+        "max_queue_size": 16,
+        "accepting": true,
+        "admitted": 80,
+        "completed": 80,
+        "rejected_queue_full": 167,
+        "rejected_timeout": 0,
+        "rejected_shutdown": 0,
+        "peak_queue_depth": 16,
+        "peak_in_flight": 8,
+        "total_queue_wait_s": 225.8225884079999,
+        "rejected": 167,
+        "mean_queue_wait_s": 2.8227823550999984
+      }
+    },
+    {
+      "label": "24 rps",
+      "concurrency": 8,
+      "rps_target": 24.0,
+      "wall_s": 12.0,
+      "in_flight_at_close": 17,
+      "arrivals_in_window": 289,
+      "issued": 288,
+      "succeeded": 48,
+      "rejected": 240,
+      "failed": 0,
+      "throughput_rps": 24.0,
+      "goodput_rps": 4.0,
+      "output_tokens": 3072,
+      "output_tps": 256.0,
+      "ttft": {
+        "n": 48,
+        "mean": 3.7312226092500063,
+        "p50": 3.821398912500001,
+        "p90": 3.8905162267000266,
+        "p95": 3.918589607699977,
+        "p99": 3.94020278291002,
+        "max": 3.943960455000024
+      },
+      "itl": {
+        "n": 3024,
+        "mean": 0.026279009450396865,
+        "p50": 0.02637853549998681,
+        "p90": 0.03142971489992306,
+        "p95": 0.031901785149921126,
+        "p99": 0.032677850019969125,
+        "max": 0.03369498300003215
+      },
+      "e2e": {
+        "n": 48,
+        "mean": 5.3868348557916805,
+        "p50": 5.473308895499997,
+        "p90": 5.562352813900032,
+        "p95": 5.584247785949964,
+        "p99": 5.600982554659971,
+        "max": 5.604804887
+      },
+      "reject_reasons": {
+        "queue_full": 240
+      },
+      "status_codes": {
+        "200": 48,
+        "429": 240
+      },
+      "server_stats": {
+        "in_flight": 0,
+        "queue_depth": 0,
+        "max_concurrency": 8,
+        "max_queue_size": 16,
+        "accepting": true,
+        "admitted": 80,
+        "completed": 80,
+        "rejected_queue_full": 310,
+        "rejected_timeout": 0,
+        "rejected_shutdown": 0,
+        "peak_queue_depth": 16,
+        "peak_in_flight": 8,
+        "total_queue_wait_s": 234.96710298600044,
+        "rejected": 310,
+        "mean_queue_wait_s": 2.9370887873250053
+      }
+    },
+    {
+      "label": "32 rps",
+      "concurrency": 8,
+      "rps_target": 32.0,
+      "wall_s": 12.0,
+      "in_flight_at_close": 17,
+      "arrivals_in_window": 387,
+      "issued": 386,
+      "succeeded": 48,
+      "rejected": 338,
+      "failed": 0,
+      "throughput_rps": 32.166666666666664,
+      "goodput_rps": 4.0,
+      "output_tokens": 3072,
+      "output_tps": 256.0,
+      "ttft": {
+        "n": 48,
+        "mean": 3.745259128375004,
+        "p50": 3.8142378405000272,
+        "p90": 3.886804700500022,
+        "p95": 3.9043673180999976,
+        "p99": 3.9323173252499704,
+        "max": 3.9501620149999326
+      },
+      "itl": {
+        "n": 3024,
+        "mean": 0.026275769978505094,
+        "p50": 0.026261041999987356,
+        "p90": 0.031450154599940564,
+        "p95": 0.03193556790001821,
+        "p99": 0.03269311991000109,
+        "max": 0.033676299000035215
+      },
+      "e2e": {
+        "n": 48,
+        "mean": 5.4006665618125,
+        "p50": 5.467897301999983,
+        "p90": 5.5338899279999625,
+        "p95": 5.579744209499978,
+        "p99": 5.613323368279921,
+        "max": 5.625520279999932
+      },
+      "reject_reasons": {
+        "queue_full": 338
+      },
+      "status_codes": {
+        "200": 48,
+        "429": 338
+      },
+      "server_stats": {
+        "in_flight": 0,
+        "queue_depth": 0,
+        "max_concurrency": 8,
+        "max_queue_size": 16,
+        "accepting": true,
+        "admitted": 80,
+        "completed": 80,
+        "rejected_queue_full": 436,
+        "rejected_timeout": 0,
+        "rejected_shutdown": 0,
+        "peak_queue_depth": 16,
+        "peak_in_flight": 8,
+        "total_queue_wait_s": 235.06137601000046,
+        "rejected": 436,
+        "mean_queue_wait_s": 2.9382672001250056
+      }
+    }
+  ]
+}

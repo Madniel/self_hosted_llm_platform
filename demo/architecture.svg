@@ -1,0 +1,135 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 470" width="1000" height="470"
+     role="img" aria-label="Request flow: clients to admission control, which either admits to the inference engine or sheds with 429; admitted requests stream tokens back.">
+  <title>Request path through admission control</title>
+  <style>
+    :root, svg {
+      --surface:#fcfcfb; --panel:#f4f3ef; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
+      --rule:#c3c2b7; --ok:#2a78d6; --shed:#eb6834; --slot:#2a78d6; --slotbg:#cde2fb;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root, svg {
+        --surface:#1a1a19; --panel:#232321; --ink:#ffffff; --ink2:#c3c2b7; --muted:#898781;
+        --rule:#383835; --ok:#3987e5; --shed:#d95926; --slot:#3987e5; --slotbg:#184f95;
+      }
+    }
+    .bg { fill: var(--surface); }
+    .box { fill: var(--panel); stroke: var(--rule); stroke-width: 1.5; }
+    .t { font-family: system-ui,-apple-system,"Segoe UI",sans-serif; fill: var(--ink); }
+    .h { font-size: 17px; font-weight: 650; }
+    .b { font-size: 13.5px; fill: var(--ink2); }
+    .s { font-size: 12px; fill: var(--muted); }
+    .num { font-size: 12px; fill: var(--muted); font-variant-numeric: tabular-nums; }
+    .flow { stroke: var(--ok); stroke-width: 2.5; fill: none; }
+    .shedline { stroke: var(--shed); stroke-width: 2.5; fill: none; }
+    .back { stroke: var(--ok); stroke-width: 2; fill: none; stroke-dasharray: 6 5; }
+    .slot { fill: var(--slot); }
+    .slotoff { fill: none; stroke: var(--rule); stroke-width: 1.5; }
+    .qcell { fill: var(--slotbg); }
+    .qcellempty { fill: none; stroke: var(--rule); stroke-width: 1; }
+  </style>
+
+  <rect class="bg" x="0" y="0" width="1000" height="470"/>
+
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="var(--ok)"/>
+    </marker>
+    <marker id="arS" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="var(--shed)"/>
+    </marker>
+  </defs>
+
+  <!-- 1. clients -->
+  <text class="t h" x="30" y="124">Clients</text>
+  <g>
+    <rect class="box" x="30" y="132" width="108" height="26" rx="6"/>
+    <rect class="box" x="30" y="166" width="108" height="26" rx="6"/>
+    <rect class="box" x="30" y="200" width="108" height="26" rx="6"/>
+    <text class="t s" x="42" y="150">POST /v1/chat</text>
+    <text class="t s" x="42" y="184">POST /v1/chat</text>
+    <text class="t s" x="42" y="218">POST /v1/chat</text>
+  </g>
+  <text class="t s" x="30" y="248">arrivals, unbounded</text>
+
+  <path class="flow" d="M146 179 L196 179" marker-end="url(#ar)"/>
+
+  <!-- 2. admission control -->
+  <rect class="box" x="206" y="62" width="330" height="236" rx="10"/>
+  <text class="t h" x="226" y="90">Admission control</text>
+  <text class="t b" x="226" y="110">decides before a response starts</text>
+
+  <text class="t s" x="226" y="140">bounded FIFO queue — 16 deep</text>
+  <g>
+    <rect class="qcell" x="226" y="150" width="15" height="22" rx="3"/>
+    <rect class="qcell" x="245" y="150" width="15" height="22" rx="3"/>
+    <rect class="qcell" x="264" y="150" width="15" height="22" rx="3"/>
+    <rect class="qcell" x="283" y="150" width="15" height="22" rx="3"/>
+    <rect class="qcell" x="302" y="150" width="15" height="22" rx="3"/>
+    <rect class="qcellempty" x="321" y="150" width="15" height="22" rx="3"/>
+    <rect class="qcellempty" x="340" y="150" width="15" height="22" rx="3"/>
+    <rect class="qcellempty" x="359" y="150" width="15" height="22" rx="3"/>
+    <text class="t num" x="384" y="166">FIFO — no barging</text>
+  </g>
+
+  <text class="t s" x="226" y="205">concurrency gate — 8 permits</text>
+  <g>
+    <circle class="slot" cx="234" cy="224" r="7"/>
+    <circle class="slot" cx="254" cy="224" r="7"/>
+    <circle class="slot" cx="274" cy="224" r="7"/>
+    <circle class="slot" cx="294" cy="224" r="7"/>
+    <circle class="slot" cx="314" cy="224" r="7"/>
+    <circle class="slot" cx="334" cy="224" r="7"/>
+    <circle class="slot" cx="354" cy="224" r="7"/>
+    <circle class="slot" cx="374" cy="224" r="7"/>
+    <text class="t num" x="392" y="229">all 8 busy → the rest wait</text>
+  </g>
+
+  <text class="t s" x="226" y="270">queue full, or waited &gt; 15s?</text>
+  <text class="t s" x="226" y="286">→ refuse immediately</text>
+
+  <!-- shed path -->
+  <path class="shedline" d="M371 298 L371 366" marker-end="url(#arS)"/>
+  <rect class="box" x="246" y="374" width="250" height="60" rx="8"/>
+  <text class="t h" x="264" y="399" style="fill:var(--shed)">429 · 503</text>
+  <text class="t b" x="264" y="420">refused in ~2 ms, with Retry-After</text>
+
+  <!-- admitted path -->
+  <path class="flow" d="M546 179 L606 179" marker-end="url(#ar)"/>
+  <text class="t s" x="548" y="168">admitted</text>
+
+  <!-- 3. engine -->
+  <rect class="box" x="616" y="102" width="230" height="156" rx="10"/>
+  <text class="t h" x="636" y="132">Inference engine</text>
+  <text class="t b" x="636" y="152">vLLM, or the GPU-free mock</text>
+  <g>
+    <circle class="slot" cx="644" cy="182" r="7"/>
+    <circle class="slot" cx="664" cy="182" r="7"/>
+    <circle class="slot" cx="684" cy="182" r="7"/>
+    <circle class="slot" cx="704" cy="182" r="7"/>
+    <circle class="slot" cx="724" cy="182" r="7"/>
+    <circle class="slot" cx="744" cy="182" r="7"/>
+    <circle class="slot" cx="764" cy="182" r="7"/>
+    <circle class="slot" cx="784" cy="182" r="7"/>
+  </g>
+  <text class="t s" x="636" y="212">never more than 8 in the batch,</text>
+  <text class="t s" x="636" y="228">so decode never thrashes</text>
+
+  <!-- 4. streamed response -->
+  <path class="flow" d="M856 179 L906 179" marker-end="url(#ar)"/>
+  <text class="t h" x="880" y="130">Tokens</text>
+  <g>
+    <rect class="qcell" x="880" y="150" width="46" height="9" rx="3"/>
+    <rect class="qcell" x="880" y="165" width="62" height="9" rx="3"/>
+    <rect class="qcell" x="880" y="180" width="38" height="9" rx="3"/>
+    <rect class="qcell" x="880" y="195" width="54" height="9" rx="3"/>
+  </g>
+  <text class="t s" x="880" y="226">SSE deltas,</text>
+  <text class="t s" x="880" y="242">as produced</text>
+
+  <!-- return path, routed over the top: along the bottom it crossed the shed
+       arrow, which reads as the refused requests joining the response stream -->
+  <path class="back" d="M966 168 L966 34 L92 34 L92 96" marker-end="url(#ar)"/>
+  <text class="t b" x="529" y="26" text-anchor="middle">first token leaves before the rest is generated</text>
+
+  <text class="t s" x="30" y="456">The bound on concurrency sets throughput. The bound on the queue sets how long anyone waits before hearing &#8220;no&#8221;.</text>
+</svg>

@@ -8,3 +8,6 @@ venv/
 results/
 *.log
 .env
+
+# generated during a demo run
+demo/out/
